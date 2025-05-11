@@ -1,12 +1,16 @@
-<h1 align="center">🚀 Dabas: Lightweight Database Management Library</h1>
+<h1 align="center">🚀 Dabas: Lightweight Database Management Library - V1.0.2 </h1>
 
 <p align="center">
-<a href="https://github.com/abbas-bachari/Dabas"><img src="https://img.shields.io/badge/Dabas%20-Version%201.0.1-green?style=plastic&logo=codemagic" alt="Dabas"></a>
+<a href="https://pypi.org/project/Dabas/"><img src="https://img.shields.io/pypi/v/Dabas?style=plastic" alt="PyPI - Version"></a>
 <a href="https://github.com/abbas-bachari/Dabas"><img src="https://img.shields.io/badge/Python%20-3.7+-green?style=plastic&logo=Python" alt="Python"></a>
-  <a href="https://pypi.org/project/Dabas/"><img src="https://img.shields.io/pypi/v/Dabas?style=plastic" alt="PyPI - Version"></a>
   <a href="https://pypi.org/project/Dabas/"><img src="https://img.shields.io/pypi/l/Dabas?style=plastic" alt="License"></a>
   <a href="https://pepy.tech/project/Dabas"><img src="https://pepy.tech/badge/Dabas?style=flat-plastic" alt="Downloads"></a>
 </p>
+
+## 🛠️ Version 1.0.2
+
+
+
 
 ## 🌟 **Introduction**
 
