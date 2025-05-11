@@ -1,12 +1,6 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-import logging 
-Logger= logging.Logger(__name__)
-
-
-
-class SessionFactory:
+class EngineFactory:
     
     def __init__(self, db_name, 
                  username=None, password=None, host='localhost', port=None, 
@@ -31,10 +25,11 @@ class SessionFactory:
             url = f"{dialect_driver}://{self.username}:{self.password}@{self.host}:{port}/{self.db_name}"
             engine = create_engine(url, echo=self.echo, pool_size=self.pool_size, max_overflow=self.max_overflow)
             
-            return sessionmaker(bind=engine, expire_on_commit=False)
+            return engine
+            #sessionmaker(bind=engine, expire_on_commit=False)
         except Exception as e:
             
-            Logger.error(f"Error connecting to {dialect_driver}: {e}")
+            print(f"Error connecting to {dialect_driver}: {e}")
 
             return None
     
@@ -45,12 +40,12 @@ class SessionFactory:
             url = f"sqlite:///{self.db_name}"
            
             engine = create_engine(url, echo=self.echo)  # without port and pool_size
-            
-            return sessionmaker(bind=engine, expire_on_commit=False)
+            return engine
+            #sessionmaker(bind=engine, expire_on_commit=False)
         
         except Exception as e:
             
-            Logger.error(f"Error connecting to sqlite: {e}")
+            print(f"Error connecting to sqlite: {e}")
 
             return None
     

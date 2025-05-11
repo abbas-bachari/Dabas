@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from logging import Logger
+
 
 
 class Data:

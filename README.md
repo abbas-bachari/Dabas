@@ -50,7 +50,7 @@ pip install Dabas
 Here’s how you can **quickly set up and use Dabas** in your project.
 
 ```python
-from Dabas import DatabaseManager, SessionFactory
+from Dabas import DatabaseManager, EngineFactory
 from sqlalchemy import Column, Integer, Float, String
 from sqlalchemy.orm import declarative_base
 from time import time
@@ -76,7 +76,7 @@ order_1 = {"order_id": 1, "product": "product_1", "price": 100, "time": time()}
 order_2 = Order(order_id=2, product="product_2", price=200, time=time())
 
 # Database setup
-engine = SessionFactory("data.db").sqlite()
+engine = EngineFactory("data.db").sqlite()
 db = DatabaseManager(engine=engine, base=Base)
 
 # Create tables if they don't exist

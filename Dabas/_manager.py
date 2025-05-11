@@ -1,22 +1,26 @@
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import or_, and_
+from sqlalchemy.orm import sessionmaker,Session
+from sqlalchemy import Engine, or_, and_
 from typing import List, Dict
 from ._data import Data
-import logging 
-
-
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
-
-
 
 
 
 class DatabaseManager:
-    def __init__(self, session_factory):
+    def __init__(self, engine: Engine, base):
         """Initialize the database manager with a session factory."""
-        
-        self.session_factory = session_factory
+        self.engine = engine
+        self.base = base  # دریافت کلاس‌های مدل (Base)
+        self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
+    
+    def create_tables(self):
+        """Create tables if they don't exist"""
+        try:
+            self.base.metadata.create_all(self.engine)
+            print("✅ All tables have been created successfully.")
+        except SQLAlchemyError as e:
+            print(f"❌ Error creating tables: {e}")
+
 
     
     def __execute_transaction(self, operation, *args, **kwargs):
@@ -28,20 +32,23 @@ class DatabaseManager:
                 return result
             except SQLAlchemyError as e:
                 session.rollback()
-                logger.error(f"❌ Transaction error: {e}")
+                print(f"❌ Transaction error: {e._message()}")
+              
 
                 return None
     
     
     def insert(self, model_instance):
         """Add a new record to the database."""
-        def operation(session):
-            result=session.add(model_instance)
-            return result
+        def operation(session:Session):
+            
+            session.add(model_instance)
+            
+            return True
 
         return self.__execute_transaction(operation)
     
-    def get(self, model_class, limit=None, filters={}, order_by=None, descending=False) ->Data:
+    def get(self, model_class, limit=None, filters={}, order_by=None, descending=False):
         """Retrieve sorted data based on filters and order criteria.
 
         Args:
@@ -83,7 +90,7 @@ class DatabaseManager:
             if record:
                 for key, value in update_fields.items():
                     setattr(record, key, value)
-                logger.info(f"✅ Record updated: {record}")
+                print(f"✅ Record updated: {record}")
             return record
 
         return self.__execute_transaction(operation)
@@ -150,12 +157,11 @@ class DatabaseManager:
                         object_list.append(data)
 
             if not object_list:
-                logger.error("No data provided for bulk insert")
+                print("No data provided for bulk insert")
                 return
 
-            result = session.bulk_save_objects(object_list)
-            logger.info(f"✅ {len(object_list)} records added.")
-            return result
+            session.bulk_save_objects(object_list)
+            print(f"✅ {len(object_list)} records added.")
 
         return self.__execute_transaction(operation)
 
@@ -175,7 +181,7 @@ class DatabaseManager:
 
         def operation(session):
             row_count = session.bulk_update_mappings(model_class, updates)  # Retrieve number of updated rows
-            logger.info(f"✅ {row_count} records updated.")
+            print(f"✅ {row_count} records updated.")
             return row_count
 
         return self.__execute_transaction(operation)
@@ -198,14 +204,13 @@ class DatabaseManager:
                 query = query.filter(getattr(model_class, key) == value)
             offset = (page - 1) * per_page
             records = query.offset(offset).limit(per_page).all()
-            logger.info(f"📄 Page {page}: {len(records)} records retrieved.")
+            print(f"📄 Page {page}: {len(records)} records retrieved.")
             return records
 
-        result= self.__execute_transaction(operation)
-        return Data(result)
+        return self.__execute_transaction(operation)
     
     def delete(self, model_class, filters: Dict) -> int:
-        """Delete records from the database based on filters.
+            """Delete records from the database based on filters.
 
             Args:
                 model_class (type): The SQLAlchemy model class to delete from.
@@ -213,17 +218,17 @@ class DatabaseManager:
 
             Returns:
                 int: Number of records deleted.
-        """
-        def operation(session):
+            """
+            def operation(session):
                 records = session.query(model_class).filter_by(**filters).all()
                 if records:
                     deleted_count = len(records)
                     for record in records:
                         session.delete(record)
-                    logger.info(f"✅ {deleted_count} records deleted.")
+                    print(f"✅ {deleted_count} records deleted.")
                     return deleted_count
-                logger.warning("⚠️ No matching records found for deletion.")
+                print("⚠️ No matching records found for deletion.")
                 return 0
 
-        return self.__execute_transaction(operation)
+            return self.__execute_transaction(operation)
     
