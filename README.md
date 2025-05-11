@@ -1,4 +1,4 @@
-<h1 align="center">🚀 Dabas: Lightweight Database Management Library - V1.0.2 </h1>
+<h1 align="center">🚀 Dabas: Lightweight Database Management Library</h1>
 
 <p align="center">
 <a href="https://pypi.org/project/Dabas/"><img src="https://img.shields.io/pypi/v/Dabas?style=plastic" alt="PyPI - Version"></a>
