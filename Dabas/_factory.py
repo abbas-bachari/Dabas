@@ -29,7 +29,7 @@ class EngineFactory:
             #sessionmaker(bind=engine, expire_on_commit=False)
         except Exception as e:
             
-            print(f"Error connecting to {dialect_driver}: {e}")
+            print(f"❌ Error connecting to {dialect_driver}: {e}")
 
             return None
     
@@ -45,7 +45,7 @@ class EngineFactory:
         
         except Exception as e:
             
-            print(f"Error connecting to sqlite: {e}")
+            print(f"❌ Error connecting to sqlite: {e}")
 
             return None
     

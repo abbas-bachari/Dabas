@@ -27,7 +27,7 @@ class Data:
             if save_to_file:
                 with open(save_to_file, "w", encoding="utf-8") as f:
                     f.write(json_data)
-                print(f"✅ Data saved to {save_to_file}")
+                
             return json_data
         except Exception as e:
             print(f"❌ Error converting to JSON: {e}")

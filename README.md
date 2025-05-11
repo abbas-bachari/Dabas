@@ -7,10 +7,7 @@
   <a href="https://pepy.tech/project/Dabas"><img src="https://pepy.tech/badge/Dabas?style=flat-plastic" alt="Downloads"></a>
 </p>
 
-## 🛠️ Version 1.0.2
-
-
-
+## 🛠️ Version 1.0.3
 
 ## 🌟 **Introduction**
 

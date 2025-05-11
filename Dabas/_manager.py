@@ -17,9 +17,9 @@ class DatabaseManager:
         """Create tables if they don't exist"""
         try:
             self.base.metadata.create_all(self.engine)
-            print("✅ All tables have been created successfully.")
+            return True
         except SQLAlchemyError as e:
-            print(f"❌ Error creating tables: {e}")
+            print(f"❌ Error creating tables: {e._message()}")
 
 
     
@@ -32,7 +32,7 @@ class DatabaseManager:
                 return result
             except SQLAlchemyError as e:
                 session.rollback()
-                print(f"❌ Transaction error: {e._message()}")
+                print(f"❌ Error Transaction: {e._message()}")
               
 
                 return None
@@ -90,7 +90,7 @@ class DatabaseManager:
             if record:
                 for key, value in update_fields.items():
                     setattr(record, key, value)
-                print(f"✅ Record updated: {record}")
+                
             return record
 
         return self.__execute_transaction(operation)
@@ -161,7 +161,7 @@ class DatabaseManager:
                 return
 
             session.bulk_save_objects(object_list)
-            print(f"✅ {len(object_list)} records added.")
+            return len(object_list)
 
         return self.__execute_transaction(operation)
 
@@ -181,7 +181,7 @@ class DatabaseManager:
 
         def operation(session):
             row_count = session.bulk_update_mappings(model_class, updates)  # Retrieve number of updated rows
-            print(f"✅ {row_count} records updated.")
+            
             return row_count
 
         return self.__execute_transaction(operation)
@@ -204,7 +204,7 @@ class DatabaseManager:
                 query = query.filter(getattr(model_class, key) == value)
             offset = (page - 1) * per_page
             records = query.offset(offset).limit(per_page).all()
-            print(f"📄 Page {page}: {len(records)} records retrieved.")
+            
             return records
 
         return self.__execute_transaction(operation)
@@ -225,9 +225,9 @@ class DatabaseManager:
                     deleted_count = len(records)
                     for record in records:
                         session.delete(record)
-                    print(f"✅ {deleted_count} records deleted.")
+                    
                     return deleted_count
-                print("⚠️ No matching records found for deletion.")
+                print("No matching records found for deletion.")
                 return 0
 
             return self.__execute_transaction(operation)

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Dabas',
-    version='1.0.2',
+    version='1.0.3',
     author='Abbas Bachari',
     author_email='abbas-bachari@hotmail.com',
     description="A Python library for Database Management",
