@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker,Session
 from sqlalchemy import Engine, or_, and_
 from typing import List, Dict,Any
 from ._data import Data
-from sqlalchemy.ext import  ColumnExpressionArgument
+
 
 
 class DatabaseManager:
@@ -13,7 +13,7 @@ class DatabaseManager:
         self.base = base  # دریافت کلاس‌های مدل (Base)
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
     
-    def create_tables(self):
+    def create_tables(self)-> bool:
         """Create tables if they don't exist"""
         try:
             self.base.metadata.create_all(self.engine)
@@ -56,7 +56,7 @@ class DatabaseManager:
         result=self.execute_transaction(operation) 
         return result or False
     
-    def get(self, model_class,limit=None,conditions:list=None, order_by=None,descending=False )->List:
+    def get(self, model_class,limit=None,conditions:list=None, order_by=None,descending=False )-> Data:
         
 
         """

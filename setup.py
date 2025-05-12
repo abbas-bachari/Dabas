@@ -27,7 +27,6 @@ setup(
         'Intended Audience :: Developers',
         "Intended Audience :: Financial and Insurance Industry",
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         "Programming Language :: Python :: 3",
         
