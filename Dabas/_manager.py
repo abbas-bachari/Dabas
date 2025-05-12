@@ -3,6 +3,12 @@ from sqlalchemy.orm import sessionmaker,Session
 from sqlalchemy import Engine, or_, and_
 from typing import List, Dict,Any
 from ._data import Data
+import logging
+
+logging.basicConfig(level=logging.ERROR,  format="%(asctime)s - %(levelname)s - %(message)s")
+
+
+
 
 
 
@@ -12,6 +18,8 @@ class DatabaseManager:
         self.engine = engine
         self.base = base  # دریافت کلاس‌های مدل (Base)
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
+        self.logger = logging.getLogger(__name__)
+
     
     def create_tables(self)-> bool:
         """Create tables if they don't exist"""
@@ -19,7 +27,7 @@ class DatabaseManager:
             self.base.metadata.create_all(self.engine)
             return True
         except SQLAlchemyError as e:
-            print(f"❌ Error creating tables: {e._message()}")
+            self.logger.error(e._message())
 
     def execute_transaction(self, operation, *args, **kwargs):
         """Automatically manages database transactions.
@@ -41,8 +49,8 @@ class DatabaseManager:
                 return result
             except SQLAlchemyError as e:
                 session.rollback()
-                print(f"❌ Error Transaction: {e._message()}")
-                # For example, you can return None, False or raise an exception
+                self.logger.error(e._message())
+               
                 return None
     
     def insert(self, model_instance) -> bool:
