@@ -1,9 +1,9 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker,Session
 from sqlalchemy import Engine, or_, and_
-from typing import List, Dict
+from typing import List, Dict,Any
 from ._data import Data
-
+from sqlalchemy.ext import  ColumnExpressionArgument
 
 
 class DatabaseManager:
@@ -21,8 +21,6 @@ class DatabaseManager:
         except SQLAlchemyError as e:
             print(f"❌ Error creating tables: {e._message()}")
 
-
-    
     def execute_transaction(self, operation, *args, **kwargs):
         """Automatically manages database transactions.
         
@@ -47,8 +45,7 @@ class DatabaseManager:
                 # For example, you can return None, False or raise an exception
                 return None
     
-    
-    def insert(self, model_instance):
+    def insert(self, model_instance) -> bool:
         """Add a new record to the database."""
         def operation(session:Session):
             
@@ -56,107 +53,47 @@ class DatabaseManager:
             
             return True
 
-        return self.execute_transaction(operation)
+        result=self.execute_transaction(operation) 
+        return result or False
     
-    def get(self, model_class, limit=None, filters={}, order_by=None, descending=False):
-        """Retrieve sorted data based on filters and order criteria.
+    def get(self, model_class,limit=None,conditions:list=None, order_by=None,descending=False )->List:
+        
+
+        """
+        Retrieve data based on SQLAlchemy filter conditions.
 
         Args:
-            model_class (type): The SQLAlchemy model class to retrieve.
-            limit (int): Maximum number of records to return.
-            filters (dict): Filtering conditions.
-            order_by (str): Column name for ordering results.
-            descending (bool): If True, sorts in descending order.
+            model_class (type): The SQLAlchemy model class to retrieve from.
+            conditions (List, optional): A list of SQLAlchemy filter conditions. Defaults to None.
+            limit (int, optional): The number of records per page. Defaults to None.
+            order_by (str, optional): The column name for ordering results. Defaults to None.
+            descending (bool, optional): If True, sorts in descending order. Defaults to False.
 
         Returns:
-            Data: Retrieved database records.
-        """
+            List: A list of records retrieved from the database.
 
-        def operation(session):
+        ### Example usage of different conditions:
+
+            conditions=[]
+            conditions.append(model_class.column_name == 'value')
+            conditions.append(model_class.column_name != 'value')
+            conditions.append(model_class.column_name.in_(['value', 'value2']))
+            conditions.append(model_class.column_name.like('%value%'))
+            conditions.append(model_class.column_name.ilike('%value%'))
+            conditions.append(model_class.column_name.is_(None))
+            conditions.append(model_class.column_name.isnot(None))
+            conditions.append(model_class.column_name.between(1, 10))
+            conditions.append(model_class.column_name.notbetween(1, 10))
+        """
+        
+        def operation(session:Session):
             query = session.query(model_class)
             
             # Apply filters
-            for key, value in filters.items():
-                query = query.filter(getattr(model_class, key) == value)
-
-            # Apply ordering
-            if order_by:
-                order_column = getattr(model_class, order_by)
-                query = query.order_by(order_column.desc() if descending else order_column)
-
-            # Apply limit
-            if limit:
-                query = query.limit(limit)
-
-            return query.all()
-
-        result = self.execute_transaction(operation)
-        return Data(result)
-    
-    def get_all(
-            self, 
-            model_class, 
-            limit=None, 
-            order_by=None,
-            descending=False, 
-            filters={}, 
-            range_filters={},
-            or_conditions=[],
-            and_conditions=[]
-            ):
-        
-        """Retrieve sorted data based on filters and order criteria.
-
-        Args:
-            model_class (type): The SQLAlchemy model class to retrieve.
-            limit (int): Maximum number of records to return.
-            filters (dict): Filtering conditions.
-            order_by (str): Column name for ordering results.
-            descending (bool): If True, sorts in descending order.
-        
-        ## Example usage:
-        ### Search for all data with column="Field" and price between 100000 and 200000
-        results = get_all(model_class, filters={"column": "Field"}, range_filters={"price": (100000, 200000)})
-        print(results.to_dict())
-
-        ### Search with OR conditions: data with column="Field_1" or column="Field_2"
-        results = get_all(model_class, or_conditions=[("column", "Field_1"), ("column", "Field_2")])
-        print(results.to_dict())
-
-        ### Search with AND conditions: data with column="Field_1" and column="Field_2"
-        results = get_all(model_class, and_conditions=[("column", "Field_1"), ("column", "Field_2")])
-        print(results.to_dict())
-
-
-        ### Limit the number of results to 5 data
-        results = get_all(model_class, filters={"column": "Field"}, limit=5)
-        print(results.to_dict())
-
-        Returns:
-            Data: Retrieved database records.
-        """
-
-        def operation(session):
-            query = session.query(model_class)
-            
-            # Apply filters
-            for key, value in filters.items():
-                query = query.filter(getattr(model_class, key) == value)
+            if conditions:
+                query = query.filter(and_(*conditions))
 
             
-            # Apply range filters (e.g., between two values)
-            for key, (low, high) in range_filters.items():
-                query = query.filter(getattr(model_class, key).between(low, high))
-
-            # Apply OR conditions
-            if or_conditions:
-                or_filters = [getattr(model_class, key) == value for key, value in or_conditions]
-                query = query.filter(or_(*or_filters))
-            
-            # Apply AND conditions
-            if and_conditions:
-                and_filters = [getattr(model_class, key) == value for key, value in and_conditions]
-                query = query.filter(and_(*and_filters))
             
             # Apply ordering
             if order_by:
@@ -172,56 +109,6 @@ class DatabaseManager:
         result = self.execute_transaction(operation)
         return Data(result)
     
-    def search(self, model_class, filters={}, range_filters={}, or_conditions=[],and_conditions=[], limit=None):
-        """Advanced search based on exact filters, range filters, and OR conditions.
-
-        ## Example usage:
-        ### Search for all data with column="Field" and price between 100000 and 200000
-        results = search(model_class, filters={"column": "Field"}, range_filters={"price": (100000, 200000)})
-        print(results.to_dict())
-
-        ### Search with OR conditions: data with column="Field_1" or column="Field_2"
-        results = search(model_class, or_conditions=[("column", "Field_1"), ("column", "Field_2")])
-        print(results.to_dict())
-
-        ### Search with AND conditions: data with column="Field_1" and column="Field_2"
-        results = search(model_class, and_conditions=[("column", "Field_1"), ("column", "Field_2")])
-        print(results.to_dict())
-
-
-        ### Limit the number of results to 5 data
-        results = search(model_class, filters={"column": "Field"}, limit=5)
-        print(results.to_dict())
-        """
-        def operation(session):
-            query = session.query(model_class)
-
-            # Apply exact filters
-            for key, value in filters.items():
-                query = query.filter(getattr(model_class, key) == value)
-
-            # Apply range filters (e.g., between two values)
-            for key, (low, high) in range_filters.items():
-                query = query.filter(getattr(model_class, key).between(low, high))
-
-            # Apply OR conditions
-            if or_conditions:
-                or_filters = [getattr(model_class, key) == value for key, value in or_conditions]
-                query = query.filter(or_(*or_filters))
-            # Apply AND conditions
-            if and_conditions:
-                and_filters = [getattr(model_class, key) == value for key, value in and_conditions]
-                query = query.filter(and_(*and_filters))
-            
-            # Apply limit
-            if limit:
-                query = query.limit(limit)
-
-            return query.all()
-
-        result = self.execute_transaction(operation)
-        return Data(result)
-
     def update(self, model_class, filters, update_fields):
         """Update database records using filters."""
         def operation(session):
@@ -236,7 +123,7 @@ class DatabaseManager:
 
     def bulk_insert(self, model_class, data_list: List[Dict]):
         """Insert multiple records into the database."""
-        def operation(session):
+        def operation(session:Session):
             object_list = []
             for data in data_list:
                 if data:
@@ -275,22 +162,35 @@ class DatabaseManager:
 
         return self.execute_transaction(operation)
 
-    def paginate(self, model_class, filters={}, page: int = 1, per_page: int = 10):
-        """Retrieve paginated results from the database.
-
+    def paginate(self, model_class, conditions: List=None, page: int = 1, per_page: int = 10):
+       
+        """Retrieve paginated records from the database.
         Args:
-            model_class (type): The SQLAlchemy model class to retrieve.
-            filters (Dict): Filtering conditions.
-            page (int): The current page number.
-            per_page (int): Number of records per page.
+            model_class (type): The SQLAlchemy model class to retrieve from.
+            conditions (List, optional): A list of SQLAlchemy filter conditions. Defaults to None.
+            page (int, optional): The page number to retrieve. Defaults to 1.
+            per_page (int, optional): The number of records per page. Defaults to 10.
 
         Returns:
-            List: Paginated records.
+            List: A list of records retrieved from the database.
+        
+        ### Example usage of different conditions:
+            conditions=[]
+            conditions.append(model_class.column_name == 'value')
+            conditions.append(model_class.column_name != 'value')
+            conditions.append(model_class.column_name.in_(['value', 'value2']))
+            conditions.append(model_class.column_name.like('%value%'))
+            conditions.append(model_class.column_name.ilike('%value%'))
+            conditions.append(model_class.column_name.is_(None))
+            conditions.append(model_class.column_name.isnot(None))
+            conditions.append(model_class.column_name.between(1, 10))
+            conditions.append(model_class.column_name.notbetween(1, 10))
         """
-        def operation(session):
+        def operation(session:Session):
             query = session.query(model_class)
-            for key, value in filters.items():
-                query = query.filter(getattr(model_class, key) == value)
+            if conditions:
+                query = query.filter(and_(*conditions))
+                
             offset = (page - 1) * per_page
             records = query.offset(offset).limit(per_page).all()
             
@@ -298,26 +198,56 @@ class DatabaseManager:
 
         return self.execute_transaction(operation)
     
-    def delete(self, model_class, filters: Dict) -> int:
-            """Delete records from the database based on filters.
+    def delete(self, model_class, conditions: List|str=None,primary_keys:List[Any]=[]) -> int:
+        """Delete records from the database based on the given conditions.
 
-            Args:
-                model_class (type): The SQLAlchemy model class to delete from.
-                filters (Dict): The filtering conditions.
+        Args:
+            model_class (type): The SQLAlchemy model class to delete from.
+            conditions (List|str): A list of SQLAlchemy filter conditions or a string 'ALL' to delete all records of the model_class.
+            primary_keys (List[Any]): A list of primary key values to delete. If not provided, the primary key of the model_class is determined automatically.
 
-            Returns:
-                int: Number of records deleted.
-            """
-            def operation(session):
-                records = session.query(model_class).filter_by(**filters).all()
-                if records:
-                    deleted_count = len(records)
-                    for record in records:
-                        session.delete(record)
-                    
-                    return deleted_count
-                print("No matching records found for deletion.")
-                return 0
+        Returns:
+            int: Number of rows deleted.
 
-            return self.execute_transaction(operation)
-    
+        ### Example usage of different conditions:
+            conditions=[]
+            conditions.append(model_class.column_name == 'value')
+            conditions.append(model_class.column_name != 'value')
+            conditions.append(model_class.column_name.in_(['value', 'value2']))
+            conditions.append(model_class.column_name.like('%value%'))
+            conditions.append(model_class.column_name.ilike('%value%'))
+            conditions.append(model_class.column_name.is_(None))
+            conditions.append(model_class.column_name.isnot(None))
+            conditions.append(model_class.column_name.between(1, 10))
+            conditions.append(model_class.column_name.notbetween(1, 10))
+
+        """
+        
+       
+        conditions = conditions or []
+        
+        if isinstance(conditions, list) and primary_keys:
+            primary_keys_list = list(model_class.__table__.primary_key.columns)
+            if not primary_keys_list:
+                raise ValueError(f"Model {model_class.__name__} has no primary key!")
+            primary_key = primary_keys_list[0].name
+            condition = getattr(model_class, primary_key).in_(primary_keys)
+            conditions.append(condition)
+
+        
+        
+
+        def operation(session:Session):
+            if isinstance(conditions, str) and conditions == 'ALL':
+                deleted_count = session.query(model_class).delete(synchronize_session=False)
+            elif isinstance(conditions, list):
+                deleted_count = session.query(model_class).filter(and_(*conditions)).delete(synchronize_session=False)
+            else:   
+                deleted_count=0
+                
+            return deleted_count
+
+
+        result=self.execute_transaction(operation) 
+        return result if result is not None else 0
+
