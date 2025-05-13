@@ -16,7 +16,7 @@ class DatabaseManager:
     def __init__(self, engine: Engine, base):
         """Initialize the database manager with a session factory."""
         self.engine = engine
-        self.base = base  # دریافت کلاس‌های مدل (Base)
+        self.base = base  
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.logger = logging.getLogger(__name__)
 
