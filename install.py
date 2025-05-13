@@ -34,4 +34,4 @@ def install_wheels(wheels_dir = "dist"):
 outdir = "dist"   
 
 build_package(outdir=outdir)
-install_wheels(wheels_dir=outdir)
+# install_wheels(wheels_dir=outdir)
