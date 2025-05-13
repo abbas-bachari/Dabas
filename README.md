@@ -162,7 +162,7 @@ print(filtered_orders, or_filtered_orders, and_filtered_orders)
 #### ✅ **Flexible filtering with OR/AND and range condition**
 
 
-### 3️⃣ ***Update Records with Bulk Updat***
+### 3️⃣ ***Update Records with Bulk Update***
 
 ```python
 # Update multiple records at once
