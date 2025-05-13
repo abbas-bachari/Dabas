@@ -35,3 +35,5 @@ outdir = "dist"
 
 build_package(outdir=outdir)
 # install_wheels(wheels_dir=outdir)
+
+os.system(f'twine upload --config-file .pypirc {outdir}/*')
