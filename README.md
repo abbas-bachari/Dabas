@@ -133,16 +133,7 @@ db.bulk_insert(Order,bulk_orders)
 
 
 ### 2️⃣ ***Query with Filters (OR, AND, Range)***
-conditions=[]
-            conditions.append(model_class.column_name == 'value')
-            conditions.append(model_class.column_name != 'value')
-            conditions.append(model_class.column_name.in_(['value', 'value2']))
-            conditions.append(model_class.column_name.like('%value%'))
-            conditions.append(model_class.column_name.ilike('%value%'))
-            conditions.append(model_class.column_name.is_(None))
-            conditions.append(model_class.column_name.isnot(None))
-            conditions.append()
-            conditions.append(model_class.column_name.notbetween(1, 10))
+
 ```python
 # Get orders where price is between 100 and 200
 filters=[Order.price.between(100, 200)]
