@@ -123,7 +123,7 @@ bulk_orders = [
     {"order_id": 5, "product": "product_5", "price": 350, "time": time()},
 ]
 
-db.bulk_insert([Order(**order) for order in bulk_orders])
+db.bulk_insert(Order,bulk_orders)
 ```
 
 #### ✅ Faster insertion
@@ -133,19 +133,36 @@ db.bulk_insert([Order(**order) for order in bulk_orders])
 
 
 ### 2️⃣ ***Query with Filters (OR, AND, Range)***
-
+conditions=[]
+            conditions.append(model_class.column_name == 'value')
+            conditions.append(model_class.column_name != 'value')
+            conditions.append(model_class.column_name.in_(['value', 'value2']))
+            conditions.append(model_class.column_name.like('%value%'))
+            conditions.append(model_class.column_name.ilike('%value%'))
+            conditions.append(model_class.column_name.is_(None))
+            conditions.append(model_class.column_name.isnot(None))
+            conditions.append()
+            conditions.append(model_class.column_name.notbetween(1, 10))
 ```python
-# Get orders where price is between 100 and 300
-filtered_orders =  db.search(model_class,  range_filters={"price": (100, 200)}).to_json()
+# Get orders where price is between 100 and 200
+filters=[Order.price.between(100, 200)]
+
+filtered_orders =  db.search(model_class,  conditions=filters).to_json()
 
 
 
 # Get orders with specific conditions (OR)
-or_filtered_orders =db.search(model_class, or_conditions=[("product", "product_1"), ("price", 250)]).to_json()
+from sqlalchemy import  or_
+or_filters=[or_(Order.product=="product_1",Order.price==250)]
+or_filtered_orders =db.search(model_class, conditions=or_filters).to_json()
 
 
 # Get orders with specific conditions (AND)
-and_filtered_orders =db.search(model_class, and_conditions=[("product", "product_4"), ("price", 250)]).to_json()
+and_filters=[
+    Order.product=="product_1",
+    Order.price==250
+    ]
+and_filtered_orders =db.search(model_class, conditions=and_filters).to_json()
 
 
 print(filtered_orders, or_filtered_orders, and_filtered_orders)
@@ -168,7 +185,8 @@ db.bulk_update(Order, update_data)
 
 ```python
 # Delete an order safely
-db.delete(Order, filters={"order_id":5})
+conditions=[Order.order_id==5]
+db.delete(Order, conditions=conditions)
 ```
 
 #### ✅ **Ensures rollback support in case of errors**
