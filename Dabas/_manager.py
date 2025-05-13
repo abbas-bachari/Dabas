@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker,Session
-from sqlalchemy import Engine, or_, and_
+from sqlalchemy import Engine, or_, and_,insert
 from typing import List, Dict,Any
 from ._data import Data
 import logging
@@ -129,26 +129,24 @@ class DatabaseManager:
 
         return self.execute_transaction(operation)
 
+    
     def bulk_insert(self, model_class, data_list: List[Dict]):
         """Insert multiple records into the database."""
         def operation(session:Session):
-            object_list = []
-            for data in data_list:
-                if data:
-                    if isinstance(data, dict):
-                        object_list.append(model_class(**data))
-                    elif isinstance(data, model_class):
-                        object_list.append(data)
-
-            if not object_list:
-                print("No data provided for bulk insert")
-                return
-
-            session.bulk_save_objects(object_list)
-            return len(object_list)
+            stmt = insert(model_class).values(data_list)
+            if self.engine.name in ['sqlite']:
+                stmt = stmt.prefix_with("OR IGNORE")
+            elif self.engine.name in ['mysql', 'mariadb']:
+                stmt = stmt.prefix_with("IGNORE")
+            elif self.engine.name == 'postgresql':
+                stmt =stmt.on_conflict_do_nothing(index_elements=["id"])   
+            elif self.engine.name in ['mssql', 'oracle', 'ibm_db', 'firebird']:
+                pass
+            
+            result = session.execute(stmt)
+            return result.rowcount
 
         return self.execute_transaction(operation)
-
     def bulk_update(self, model_class: type, updates: List[Dict]) -> int:
         """Perform a bulk update of the given model_class with the provided updates.
 
@@ -163,7 +161,7 @@ class DatabaseManager:
         if not updates:
             raise ValueError("No updates provided")
 
-        def operation(session):
+        def operation(session:Session):
             row_count = session.bulk_update_mappings(model_class, updates)  # Retrieve number of updated rows
             
             return row_count
