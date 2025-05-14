@@ -1,13 +1,13 @@
-import pandas as pd
+
 import json
 
 
 
 class Data:
-    def __init__(self, result) -> None:
+    def __init__(self, result:list ) -> None:
         self.result = result if result else []  # Check if result is empty
 
-    def to_dict(self):
+    def to_dict(self) -> list[dict]:
         """Convert result list to dictionary"""
         if not self.result:
             return []
@@ -20,7 +20,7 @@ class Data:
             print(f"❌ Error converting to dictionary: {e}")
             return []
 
-    def to_json(self, save_to_file:str=None):
+    def to_json(self, save_to_file:str=None)-> str:
         """Convert result list to JSON and save to file if specified"""
         try:
             json_data = json.dumps(self.to_dict(), indent=4)
@@ -32,26 +32,3 @@ class Data:
         except Exception as e:
             print(f"❌ Error converting to JSON: {e}")
             return "{}"
-
-    def to_dataframe(self, index_key=None, datetime_keys=[]):
-        """Convert result list to DataFrame and set index"""
-        data_list = self.to_dict()
-        if not data_list:
-            return pd.DataFrame()
-
-        try:
-            df = pd.DataFrame(data_list)
-
-            # convert datetime columns to datetime if exists
-            for key in datetime_keys:
-                if key in df.columns and df[key].notnull().all():
-                    df[key] = pd.to_datetime(df[key], unit="ms")
-
-            # set index to primary key
-            if index_key and index_key in df.columns:
-                df.set_index(index_key, inplace=True)
-
-            return df
-        except Exception as e:
-            print(f"❌ Error converting to DataFrame: {e}")
-            return pd.DataFrame()
