@@ -28,7 +28,7 @@ class DatabaseManager:
             return True
         except SQLAlchemyError as e:
             self.logger.error(e._message())
-
+            return False
     def execute_transaction(self, operation, *args, **kwargs):
         """Automatically manages database transactions.
         
@@ -98,7 +98,7 @@ class DatabaseManager:
             query = session.query(model_class)
             
             # Apply filters
-            if conditions:
+            if conditions :
                 query = query.filter(and_(*conditions))
 
             
@@ -115,7 +115,7 @@ class DatabaseManager:
             return query.all()
 
         result = self.execute_transaction(operation)
-        return Data(result)
+        return Data(result) # type: ignore
     
     def update(self, model_class, filters, update_fields):
         """Update database records using filters."""
@@ -164,11 +164,11 @@ class DatabaseManager:
         def operation(session:Session):
             row_count = session.bulk_update_mappings(model_class, updates)  # Retrieve number of updated rows
             
-            return row_count
+            return len(updates)
 
         return self.execute_transaction(operation)
 
-    def paginate(self, model_class, conditions: List=None, page: int = 1, per_page: int = 10):
+    def paginate(self, model_class, conditions: List=None, page: int = 1, per_page: int = 10,order_by=None,descending=False)-> Data:
        
         """Retrieve paginated records from the database.
         Args:
@@ -196,13 +196,18 @@ class DatabaseManager:
             query = session.query(model_class)
             if conditions:
                 query = query.filter(and_(*conditions))
+            # Apply ordering
+            if order_by:
+                order_column = getattr(model_class, order_by)
+                query = query.order_by(order_column.desc() if descending else order_column)
                 
             offset = (page - 1) * per_page
             records = query.offset(offset).limit(per_page).all()
             
             return records
 
-        return self.execute_transaction(operation)
+        result= self.execute_transaction(operation)
+        return Data(result)
     
     def delete(self, model_class, conditions: List|str=None,primary_keys:List[Any]=[]) -> int:
         """Delete records from the database based on the given conditions.
