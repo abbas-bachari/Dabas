@@ -4,6 +4,8 @@ from sqlalchemy import Engine, or_, and_,insert
 from typing import List, Dict,Any
 from ._data import Data
 import logging
+from sqlalchemy import func
+
 
 logging.basicConfig(level=logging.ERROR,  format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -147,6 +149,7 @@ class DatabaseManager:
             return result.rowcount
 
         return self.execute_transaction(operation)
+    
     def bulk_update(self, model_class: type, updates: List[Dict]) -> int:
         """Perform a bulk update of the given model_class with the provided updates.
 
@@ -262,3 +265,14 @@ class DatabaseManager:
         result=self.execute_transaction(operation) 
         return result if result is not None else 0
 
+    def get_record_count(self,model_class,conditions:List=None):
+        def operation(session:Session):
+            query = session.query(func.count()).select_from(model_class)
+            
+            # Apply filters
+            if conditions :
+                query = query.filter(and_(*conditions))
+            return query.scalar()
+
+        result=self.execute_transaction(operation) 
+        return result if result is not None else 0
