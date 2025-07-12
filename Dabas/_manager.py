@@ -1,7 +1,7 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker,Session
 from sqlalchemy import Engine, or_, and_,insert
-from typing import List, Dict,Any
+from typing import List, Dict,Any,Union
 from ._data import Data
 import logging
 from sqlalchemy import func
@@ -55,17 +55,103 @@ class DatabaseManager:
                
                 return None
     
-    def insert(self, model_instance) -> bool:
-        """Add a new record to the database."""
-        def operation(session:Session):
-            
-            session.add(model_instance)
-            
-            return True
-
-        result=self.execute_transaction(operation) 
-        return result or False
     
+    
+    def insert(self, model_class, data: Union[Dict[str, Any], object, List[Dict[str, Any]], List[object]]):
+        """
+            Insert one or multiple records into the database table associated with the specified SQLAlchemy model class.
+
+            Parameters
+            ----------
+            model_class : SQLAlchemy model class
+                The ORM model class representing the target database table into which data will be inserted.
+
+            data : dict, object, list of dict, or list of objects
+                The data to insert. It can be:
+                - A single dictionary representing a record
+                - A single model instance
+                - A list of dictionaries
+                - A list of model instances
+
+            Returns
+            -------
+            int
+                The number of rows successfully inserted into the database.
+                Returns 0 if no valid data is provided.
+
+            Notes
+            -----
+            - Converts model instances to dictionaries before insertion.
+            - Uses engine-specific insert conflict handling:
+                - SQLite: adds "OR IGNORE" prefix to skip duplicate entries
+                - MySQL/MariaDB: adds "IGNORE" prefix to skip duplicate entries
+                - PostgreSQL: uses "ON CONFLICT DO NOTHING" based on the primary key to ignore duplicates
+                - Other engines: performs standard insert without conflict resolution
+
+            - Uses a transaction context to execute the operation safely, ensuring commit or rollback as required.
+
+            Examples
+            --------
+            >>> db.insert(User, {"id": 1, "name": "Alice"})
+            1
+
+            >>> db.insert(User, [User(id=2, name="Bob"), User(id=3, name="Carol")])
+            2
+
+            >>> db.insert(User, [])
+            0
+
+            """
+        def to_dict(_data):
+            if isinstance(_data, dict):
+                return _data
+            if isinstance(_data, model_class):
+                _dict = _data.__dict__.copy()
+                _dict.pop('_sa_instance_state', None)
+                return _dict
+            return None
+
+        
+        
+        data_list=[]
+        if isinstance(data,list):
+            for d in data:
+                _d=to_dict(d)
+                if _d:
+                    data_list.append(_d)
+        else:
+            _d=to_dict(data)
+            if _d:
+                data_list.append(_d)
+            
+
+
+        if not data_list:
+            return 0
+        
+        
+        def operation(session:Session):
+            stmt = insert(model_class).values(data_list)
+            if self.engine.name =='sqlite':
+                stmt = stmt.prefix_with("OR IGNORE")
+            elif self.engine.name in ['mysql', 'mariadb']:
+                stmt = stmt.prefix_with("IGNORE")
+            elif self.engine.name == 'postgresql':
+
+                primary_keys_list = list(model_class.__table__.primary_key.columns)
+                if primary_keys_list:
+                    primary_key = primary_keys_list[0].name
+                    stmt =stmt.on_conflict_do_nothing(index_elements=[primary_key]) 
+            
+            elif self.engine.name in ['mssql', 'oracle', 'ibm_db', 'firebird']:
+                pass
+            
+            result = session.execute(stmt)
+            return result.rowcount
+
+        return self.execute_transaction(operation)
+
+
     def get(self, model_class,limit=None,conditions:list=None, order_by=None,descending=False )-> Data:
         
 
@@ -131,24 +217,6 @@ class DatabaseManager:
 
         return self.execute_transaction(operation)
 
-    
-    def bulk_insert(self, model_class, data_list: List[Dict]):
-        """Insert multiple records into the database."""
-        def operation(session:Session):
-            stmt = insert(model_class).values(data_list)
-            if self.engine.name in ['sqlite']:
-                stmt = stmt.prefix_with("OR IGNORE")
-            elif self.engine.name in ['mysql', 'mariadb']:
-                stmt = stmt.prefix_with("IGNORE")
-            elif self.engine.name == 'postgresql':
-                stmt =stmt.on_conflict_do_nothing(index_elements=["id"])   
-            elif self.engine.name in ['mssql', 'oracle', 'ibm_db', 'firebird']:
-                pass
-            
-            result = session.execute(stmt)
-            return result.rowcount
-
-        return self.execute_transaction(operation)
     
     def bulk_update(self, model_class: type, updates: List[Dict]) -> int:
         """Perform a bulk update of the given model_class with the provided updates.
@@ -266,7 +334,10 @@ class DatabaseManager:
         return result if result is not None else 0
 
     def get_record_count(self,model_class,conditions:List=None):
+        
+        
         def operation(session:Session):
+            
             query = session.query(func.count()).select_from(model_class)
             
             # Apply filters

@@ -117,13 +117,17 @@ print(orders)
 
 ```python
 # Insert multiple orders in one transaction
-bulk_orders = [
+orders = [
     {"order_id": 3, "product": "product_3", "price": 150, "time": time()},
     {"order_id": 4, "product": "product_4", "price": 250, "time": time()},
     {"order_id": 5, "product": "product_5", "price": 350, "time": time()},
 ]
+order = Order(order_id=2, product="product_2", price=200, time=time())
+orders.append(order)
 
-db.bulk_insert(Order,bulk_orders)
+result=db.insert(Order,orders)
+print(result)
+>>> 4
 ```
 
 #### ✅ Faster insertion
