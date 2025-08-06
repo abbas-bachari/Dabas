@@ -142,14 +142,14 @@ print(result)
 # Get orders where price is between 100 and 200
 filters=[Order.price.between(100, 200)]
 
-filtered_orders =  db.search(model_class,  conditions=filters).to_json()
+filtered_orders =  db.get(model_class,  conditions=filters).to_json()
 
 
 
 # Get orders with specific conditions (OR)
 from sqlalchemy import  or_
 or_filters=[or_(Order.product=="product_1",Order.price==250)]
-or_filtered_orders =db.search(model_class, conditions=or_filters).to_json()
+or_filtered_orders =db.get(model_class, conditions=or_filters).to_json()
 
 
 # Get orders with specific conditions (AND)
