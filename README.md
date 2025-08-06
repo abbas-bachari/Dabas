@@ -157,7 +157,7 @@ and_filters=[
     Order.product=="product_1",
     Order.price==250
     ]
-and_filtered_orders =db.search(model_class, conditions=and_filters).to_json()
+and_filtered_orders =db.get(model_class, conditions=and_filters).to_json()
 
 
 print(filtered_orders, or_filtered_orders, and_filtered_orders)
