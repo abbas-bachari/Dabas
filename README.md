@@ -1,3 +1,17 @@
+<h1 align="center">🚨 Notice!</h1>
+
+<p align="center">
+<strong>This library is no longer maintained.</strong><br>
+All development and updates have moved to the <strong>DBFlux project</strong>.<br>
+Please use the new repository for the latest features and improvements:<br>
+<a href="https://github.com/abbas-bachari/dbflux">👉 DBFlux Repository</a>
+</p>
+
+<p align="center">Thank you for your support! 🚀</p>
+
+
+
+
 <h1 align="center">🚀 Dabas: Lightweight Database Management Library</h1>
 
 <p align="center">
